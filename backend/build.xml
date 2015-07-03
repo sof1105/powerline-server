@@ -1,0 +1,135 @@
+<project name="civix-server" default="build" basedir=".">
+    <property name="build" value="build"/>
+    <property name="package.name" value="civix"/>
+    <!--<property name="package.version" value="debug"/>-->
+    <property name="dist" value="${build}/dist/${package.name}"/>
+
+    <target name="vendors" description="Run composer">
+        <exec command="composer install --prefer-dist --dev" checkreturn="true" passthru="true"/>
+    </target>
+
+    <target name="clean" description="Cleanup build artifacts">
+        <delete dir="${build}/dist" failonerror="false"/>
+        <delete dir="${build}/logs" failonerror="false"/>
+        <delete dir="${build}/coverage" failonerror="false"/>
+    </target>
+
+    <target name="prepare" depends="clean" description="Prepare for build">
+        <mkdir dir="${build}/logs"/>
+        <mkdir dir="${build}/coverage"/>
+        <mkdir dir="${build}/dist"/>
+        <exec executable="app/console" passthru="true">
+            <arg value="cache:clear"/>
+            <arg value="--env=prod"/>
+        </exec>
+    </target>
+
+    <target name="lint" description="Perform syntax check of sourcecode files">
+        <phplint>
+            <fileset dir="src"><include name="**/*.php" /></fileset>
+            <fileset dir="web"><include name="**/*.php" /></fileset>
+        </phplint>
+    </target>
+
+    <target name="cache" description="Clear test cache">
+        <exec executable="app/console" passthru="true">
+            <arg value="cache:clear"/>
+            <arg value="--env=test"/>
+        </exec>
+    </target>
+
+    <target name="phpunit-prepare" depends="clean" description="Prepare for build">
+        <mkdir dir="${build}/logs"/>
+        <mkdir dir="${build}/coverage"/>
+        <copy file="app/config/parameters.default.yml"
+              tofile="app/config/parameters.yml"/>
+    </target>
+
+    <target name="phpunit" description="Run unit tests with PHPUnit" depends="phpunit-prepare,vendors,cache">
+        <exec executable="bin/phpunit" checkreturn="true" passthru="true">
+            <arg value="-c"/> <arg value="app"/>
+            <arg value="--log-junit"/> <arg value="build/logs/junit.xml"/>
+        </exec>
+    </target>
+
+    <target name="phpcs" description="Find coding style violations">
+        <exec executable="bin/phpcs" passthru="true">
+            <arg value="--report=checkstyle"/> 
+            <arg value="--report-file=build/logs/phpcs.xml"/> 
+            <arg value="--standard=phpcs.xml"/>
+            <arg path="src"/>
+        </exec>
+    </target>
+
+    <target name="phpcs-interactive" description="Find coding style violations">
+        <exec executable="bin/phpcs">
+            <arg value="-w"/> 
+            <arg value="--standard=phpcs.xml"/>
+            <arg path="src"/>
+        </exec>
+    </target>
+
+    <target name="phpcpd" description="Find duplicate code" depends="prepare,vendors">
+        <exec executable="bin/phpcpd">
+            <arg value="--log-pmd" /> <arg value="build/logs/pmd-cpd.xml" />
+            <arg path="src" />
+        </exec>
+    </target>
+
+    <target name="ci" description="Continuous Integration" depends="lint,phpcs,build"/>
+
+    <target name="build" description="Create *.deb package" depends="prepare">
+        <copy todir="${dist}">
+            <fileset dir=".">
+                <include name="app/**/*"/>
+                <exclude name="app/cache/**/*"/>
+                <exclude name="app/logs/**/*"/>
+                <exclude name="app/cache"/>
+                <exclude name="app/logs"/>
+                <exclude name="app/phpunit.xml.dist"/>
+                <include name="src/**/*"/>
+                <exclude name="src/**/*Test.php"/>
+                <include name="web/**/*"/>
+                <exclude name="web/app_dev.php"/>
+                <exclude name="web/app_test.php"/>
+                <include name="vendor/**/*"/>
+                <include name="composer.*" />
+            </fileset>
+        </copy>
+
+        <mkdir dir="${dist}/log"/>
+
+        <exec executable="app/console" passthru="true" checkreturn="true" dir="${dist}">
+            <arg value="assets:install"/>
+            <arg value="web"/>
+        </exec>
+        <exec executable="app/console" passthru="true" checkreturn="true" dir="${dist}">
+            <arg value="assetic:dump"/>
+            <arg value="--env=prod"/>
+        </exec>
+
+        <delete>
+            <fileset dir="${dist}">
+                <include name="composer.*"/>
+                <include name="app/config/parameters.yml"/>
+            </fileset>
+        </delete>
+
+        <exec executable="fpm" checkreturn="true" passthru="true" dir="${build}">
+            <arg value="-s"/> <arg value="dir"/>
+            <arg value="-n"/> <arg value="${package.name}"/>
+            <arg value="-a"/> <arg value="all"/>
+            <arg value="-d"/> <arg value="php5-cli >= 5.5"/>
+            <arg value="-d"/> <arg value="sudo"/>
+            <arg value="-t"/> <arg value="deb"/>
+            <arg value="-v"/> <arg value="${package.version}"/>
+            <arg value="--before-install"/>
+            <arg value="../scripts/before-install.php"/>
+            <arg value="--after-install"/>
+            <arg value="../scripts/after-install"/>
+            <arg value="dist/${package.name}=/srv/"/>
+        </exec>
+    </target>
+
+</project>
+

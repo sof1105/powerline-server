@@ -1,0 +1,20 @@
+---
+- hosts: dev
+  vars:
+    update_apt_cache: false
+    server_name: "admin.civix-dev.intellectsoft.org api.civix-dev.intellectsoft.org"
+    web_server_name: "54.194.67.27 civix-dev.intellectsoft.org"
+    cert_path: targets/dev/certs
+    cert_file: apns-dev-civix.pem
+    parameters_file: targets/dev/config/parameters.yml
+    config_js_file: targets/dev/config/config.js
+  roles:
+    - setup
+    - configure
+    - monitoring
+    - deploy
+
+  pre_tasks:
+      - name: update apt if needed
+        apt: update_cache=yes
+        when: update_apt_cache

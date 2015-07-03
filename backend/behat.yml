@@ -1,0 +1,57 @@
+api:
+  formatter:
+        name:   progress
+  extensions:
+    Behat\Symfony2Extension\Extension:
+      bundle: CivixApiBundle
+      kernel:
+        env: test_behat
+    VIPSoft\DoctrineDataFixturesExtension\Extension:
+      lifetime:    scenario
+      autoload:    true
+      directories: ~
+      fixtures:
+        - Civix\CoreBundle\DataFixtures\ORM\States\LoadStateData
+        - Civix\CoreBundle\DataFixtures\ORM\States\Groups\LoadGroupStateData
+        - Civix\CoreBundle\DataFixtures\ORM\Limits\LoadQuestionLimitData
+        - Civix\CoreBundle\DataFixtures\ORM\LoadSuperuserData
+        - Civix\CoreBundle\Tests\DataFixtures\ORM\LoadDistrictData
+        - Civix\CoreBundle\Tests\DataFixtures\ORM\LoadSTRepresentativeData
+        - Civix\CoreBundle\Tests\DataFixtures\ORM\LoadRepresentativeData
+        - Civix\CoreBundle\Tests\DataFixtures\ORM\LoadInitRepresentativeData
+        - Civix\CoreBundle\Tests\DataFixtures\ORM\LoadAnnouncementData
+  context:
+    parameters:
+      base_url: https://localhost/app_test.php
+
+admin:
+    formatter:
+        name:   progress
+    paths:
+        features: %behat.paths.base%/src/Civix/FrontBundle/Features
+        bootstrap: %behat.paths.base%/src/Civix/FrontBundle/Features/Context
+    extensions:
+        Behat\Symfony2Extension\Extension:
+            bundle: CivixFrontBundle
+            mink_driver: true
+            kernel:
+                env: test_behat
+                debug: true
+        Behat\MinkExtension\Extension:
+            base_url: 'https://localhost/app_test.php'
+            default_session: 'symfony2'
+        VIPSoft\DoctrineDataFixturesExtension\Extension:
+            lifetime:    feature
+            autoload:    true
+            directories: ~
+            fixtures:
+              - Civix\CoreBundle\DataFixtures\ORM\States\LoadStateData
+              - Civix\CoreBundle\DataFixtures\ORM\States\Groups\LoadGroupStateData
+              - Civix\CoreBundle\DataFixtures\ORM\Limits\LoadQuestionLimitData
+              - Civix\CoreBundle\DataFixtures\ORM\LoadSuperuserData
+              - Civix\CoreBundle\Tests\DataFixtures\ORM\LoadDistrictData
+              - Civix\CoreBundle\Tests\DataFixtures\ORM\LoadInitRepresentativeData
+              - Civix\CoreBundle\Tests\DataFixtures\ORM\LoadRepresentativeData
+              - Civix\CoreBundle\Tests\DataFixtures\ORM\LoadSTRepresentativeData
+              - Civix\CoreBundle\Tests\DataFixtures\ORM\LoadGroupData
+              - Civix\CoreBundle\Tests\DataFixtures\ORM\LoadUserData

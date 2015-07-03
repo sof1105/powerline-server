@@ -1,0 +1,20 @@
+---
+- hosts: prod
+  vars:
+    update_apt_cache: false
+    server_name: "admin.powerli.ne api.powerli.ne"
+    web_server_name: "54.194.43.31 powerli.ne"
+    cert_path: targets/prod/certs
+    cert_file: apns-dev-civix.pem
+    parameters_file: targets/prod/config/parameters.yml
+    config_js_file: targets/prod/config/config.js
+  roles:
+    - setup
+    - configure
+    - monitoring
+    - deploy
+
+  pre_tasks:
+      - name: update apt if needed
+        apt: update_cache=yes
+        when: update_apt_cache

@@ -1,0 +1,31 @@
+- name: copy server deb package
+  tags: deploy
+  copy: src=../../build/current.deb dest=/srv/current.deb owner=root group=root mode=644
+
+- name: stop nginx
+  tags: deploy
+  service: name=nginx state=stopped
+
+- name: stop php5-fpm
+  tags: deploy
+  service: name=php5-fpm state=stopped
+
+- name: stop supervisor payments
+  tags: deploy
+  supervisorctl: name=civix_payments state=stopped
+
+- name: install / update server package
+  tags: deploy
+  command: /usr/bin/dpkg -i /srv/current.deb
+
+- name: start php5-fpm
+  tags: deploy
+  service: name=php5-fpm state=started
+
+- name: start nginx
+  tags: deploy
+  service: name=nginx state=started
+
+- name: start supervisor payments
+  tags: deploy
+  supervisorctl: name=civix_payments state=started

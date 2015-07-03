@@ -1,0 +1,111 @@
+- name: add project user
+  tags: configure
+  user: name={{ project }} comment="{{ project }}" home="/srv/{{ project }}"
+
+- name: configure fpm pool
+  tags: configure
+  template: src=fpm.j2 dest="/etc/php5/fpm/pool.d/{{ project }}.conf"
+
+- name: setup nginx vhost
+  tags: configure
+  template: src=vhost.j2 dest="/etc/nginx/sites-available/{{ project }}"
+
+- name: create log directory
+  tags: configure
+  action: file path=/srv/log state=directory
+
+- name: create config directory
+  tags: configure
+  action: file path=/srv/config state=directory
+
+- name: create certs directory
+  tags: configure
+  action: file path=/srv/certs state=directory
+
+- name: enable nginx vhost
+  tags: configure
+  file: src=/etc/nginx/sites-available/{{ project }} path=/etc/nginx/sites-enabled/{{ project }} state=link
+
+- name: copy ssl certificate
+  tags:
+    - configure
+    - deploy
+  copy: src={{ cert_path }}/server.crt dest=/srv/certs/{{ project }}-server.crt owner=root group=root mode=644
+
+- name: copy key for ssl certificate
+  tags:
+    - configure
+    - deploy
+  copy: src={{ cert_path }}/server.key dest=/srv/certs/{{ project }}-server.key owner=root group=root mode=644
+
+- name: restart nginx
+  tags: configure
+  service: name=nginx state=restarted
+
+- name: restart php5-fpm
+  tags: configure
+  service: name=php5-fpm state=restarted
+
+- name: configure rabbitmq vhost
+  tags: configure
+  rabbitmq_vhost: name={{ project }} state=present
+
+- name: configure rabbitmq user
+  tags: configure
+  rabbitmq_user: user={{ project }}
+                 password={{ project }}
+                 vhost={{ project }}
+                 configure_priv=.*
+                 read_priv=.*
+                 write_priv=.*
+                 state=present
+
+- name: configure push queue daemon (supervisor)
+  tags: configure
+  template: src=supervisor_push_queue.j2 dest="/etc/supervisor/conf.d/{{ project }}-push-queue.conf"
+
+- name: supervisor push task
+  tags: configure
+  supervisorctl: name={{ project }}_push state=stopped
+
+- name: supervisor push queue task
+  tags: configure
+  supervisorctl: name={{ project }}_push_queue state=present
+
+- name: configure payments daemon (supervisor)
+  tags: configure
+  template: src=supervisor_payments.j2 dest="/etc/supervisor/conf.d/{{ project }}-payments.conf"
+
+- name: configure payments daemon (supervisor) present
+  tags: configure
+  supervisorctl: name={{ project }}_payments state=present
+
+- name: configure subscriptions daemon (supervisor)
+  tags: configure
+  template: src=supervisor_subscriptions.j2 dest="/etc/supervisor/conf.d/{{ project }}-subscriptions.conf"
+
+- name: configure subscriptions daemon (supervisor) present
+  tags: configure
+  supervisorctl: name={{ project }}_subscriptions state=stopped
+
+- name: cron job for time sync
+  cron: user="root" name="time sync"  job="ntpdate ntp.ubuntu.com" special_time="daily"
+  tags: configure
+
+- name: copy certificate file for push notifications
+  tags:
+    - configure
+    - deploy
+  copy: src={{ cert_path }}/{{ cert_file }} dest=/srv/certs/{{ cert_file }} owner=root group=root mode=644
+
+- name: copy parameters.yml for current host
+  tags:
+    - configure
+    - deploy
+  copy: src={{ parameters_file }} dest=/srv/config/parameters.yml owner=root group=root mode=644
+
+- name: copy config.js for current host
+  tags:
+    - configure
+    - deploy
+  copy: src={{ config_js_file }} dest=/srv/config/config.js owner=root group=root mode=644

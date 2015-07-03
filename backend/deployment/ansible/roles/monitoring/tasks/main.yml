@@ -1,0 +1,25 @@
+- name: install zabbix-agent
+  apt: name={{ item }} state=installed
+  with_items:
+    - zabbix-agent
+  tags: monitoring
+
+- name: set config server
+  lineinfile: dest=/etc/zabbix/zabbix_agentd.conf regexp="^Server=.*" insertafter="^# Server=" line="Server=54.173.108.211"
+  tags: monitoring
+
+- name: set config serveractive
+  lineinfile: dest=/etc/zabbix/zabbix_agentd.conf regexp="^ServerActive=.*" insertafter="^# ServerActive=" line="ServerActive=54.173.108.21"
+  tags: monitoring
+
+- name: set config Hostname
+  lineinfile: dest=/etc/zabbix/zabbix_agentd.conf regexp="^Hostname=.*" insertafter="^# Hostname=" line="Hostname={{ host }}"
+  tags: monitoring
+
+- name: set config ListenIP
+  lineinfile: dest=/etc/zabbix/zabbix_agentd.conf regexp="^ListenIP=.*" insertafter="^# ListenIP=" line="# ListenIP="
+  tags: monitoring
+
+- name: restart zabbix-agent
+  service: name=zabbix-agent state=restarted sleep=3 enabled=yes
+  tags: monitoring

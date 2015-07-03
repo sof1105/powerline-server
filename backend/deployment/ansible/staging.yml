@@ -1,0 +1,20 @@
+---
+- hosts: staging
+  vars:
+    update_apt_cache: false
+    server_name: "admin-staging.powerli.ne api-staging.powerli.ne"
+    web_server_name: "staging.powerli.ne 54.83.45.254"
+    cert_path: targets/staging/certs
+    cert_file: apns-dev-civix.pem
+    parameters_file: targets/staging/config/parameters.yml
+    config_js_file: targets/staging/config/config.js
+  roles:
+    - setup
+    - configure
+    - monitoring
+    - deploy
+
+  pre_tasks:
+      - name: update apt if needed
+        apt: update_cache=yes
+        when: update_apt_cache
