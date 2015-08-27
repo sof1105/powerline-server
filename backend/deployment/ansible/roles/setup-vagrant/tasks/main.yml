@@ -1,13 +1,17 @@
 - name: update apt
+  tags: vagrant
   apt: update_cache=yes
 
 - name: install python modules for ansible
+  tags: vagrant
   apt: pkg=python-pycurl state=latest
 
 - name: install curl
+  tags: vagrant
   apt: pkg=curl state=latest
 
 - name: install project dependencies
+  tags: vagrant
   apt: pkg={{ item }} state=latest
   with_items:
     - vim
@@ -26,30 +30,44 @@
     - rabbitmq-server
     - mysql-server
 
-- name: configure fpm pool
+- name: fpm | configure pool
+  tags: vagrant
   template: src=fpm.j2 dest="/etc/php5/fpm/pool.d/{{ project }}.conf"
 
-- name: setup nginx vhost
+- name: nginx | setup vhost
+  tags: vagrant
   template: src=vhost.j2 dest="/etc/nginx/sites-available/{{ project }}"
 
-- name: enable nginx vhost
+- name: nginx | enable vhost
+  tags: vagrant
   file: src=/etc/nginx/sites-available/{{ project }} path=/etc/nginx/sites-enabled/{{ project }} state=link
 
-- name: restart nginx
+- name: nginx | restart
+  tags: vagrant
   service: name=nginx state=restarted
 
-- file: path=/etc/nginx/sites-enabled/default state=absent
+- name: nginx | delete default
+  file: path=/etc/nginx/sites-enabled/default state=absent
+  tags: vagrant
 
-- copy: src=server.crt dest=/srv/server.crt
-- copy: src=server.key dest=/srv/server.key
+- name: nginx | copy server crt
+  copy: src=server.crt dest=/srv/server.crt
+  tags: vagrant
 
-- name: restart php5-fpm
+- name: nginx | copy server key
+  copy: src=server.key dest=/srv/server.key
+  tags: vagrant
+
+- name: fpm | restart
+  tags: vagrant
   service: name=php5-fpm state=restarted
 
-- name: configure rabbitmq vhost
+- name: rabbitmq | configure vhost
+  tags: vagrant
   rabbitmq_vhost: name={{ project }} state=present
 
-- name: configure rabbitmq user
+- name: rabbitmq | configure user
+  tags: vagrant
   rabbitmq_user: user={{ project }}
                  password={{ project }}
                  vhost={{ project }}
@@ -58,13 +76,30 @@
                  write_priv=.*
                  state=present
 
-- name: install composer
+- name: composer | install
+  tags: vagrant
   shell: >
     curl -sS https://getcomposer.org/installer | php;
 
-- shell: mv composer.phar /usr/local/bin/composer;
+- name: composer | path fix 
+  tags: vagrant
+  shell: mv composer.phar /usr/local/bin/composer;
 
-- name: setup known_hosts
+- name: ssh | setup known_hosts
+  tags: vagrant
   copy: src=known_hosts dest=/etc/ssh/ssh_known_hosts
 
-- service: name=nginx state=restarted
+- name: nginx | restart 
+  tags: vagrant
+  service: name=nginx state=restarted
+
+
+- name: symfony | copy parameters
+  tags: vagrant
+  command: cp app/config/parameters.default.yml app/config/parameters.yml
+  args:
+    chdir: /vagrant/backend 
+
+- name: composer | install dependancies
+  tags: composer
+  composer: command=install working_dir=/vagrant/backend 
