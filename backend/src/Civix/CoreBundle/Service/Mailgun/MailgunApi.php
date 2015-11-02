@@ -80,4 +80,18 @@ class MailgunApi {
 
     }
 
+    public function listremoveAction($listname)
+    {
+
+        $mailgun = new Mailgun($this::$private_key,"api.mailgun.net","v3",true);
+
+        $listAddress = $listname.'@powerlinegroups.com';
+
+        $result = $mailgun->delete("lists/$listAddress");
+
+
+        return new JsonResponse($result);
+
+    }
+
 }
