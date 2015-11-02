@@ -88,7 +88,7 @@ class GroupController extends BaseController
 
         if($mailgun['http_response_code'] != 200){
 
-               $this->createJSONResponse(json_encode(['error' => 'cannot add to mailgun list']),403) ;
+               $this->createJSONResponse(json_encode(['error' => 'cannot add owner\'s email to mailgun list']),403) ;
 
         }
         $this->get('civix_core.group_manager')
