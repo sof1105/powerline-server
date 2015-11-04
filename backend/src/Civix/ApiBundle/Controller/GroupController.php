@@ -225,6 +225,20 @@ class GroupController extends BaseController
             return $response;
         }
 
+        $slugify = new Slugify();
+
+        $groupName = $slugify->slugify($group->getOfficialName(),'');
+
+        $mailgun = $this->get('civix_core.mailgun')->listaddmemberAction($groupName,$this->getUser()->getEmail(),$this->getUser()->getFirstName().' '.$this->getUser()->getLastName());
+
+        if($mailgun['http_response_code'] != 200){
+            $response->setStatusCode(403)->setContent(
+                json_encode(['error' => 'cannot add to mailgun list'])
+            );
+        }
+
+        else{
+
         $changedUser = $this->get('civix_core.group_manager')
             ->joinToGroup($user, $group);
 
@@ -238,22 +252,12 @@ class GroupController extends BaseController
             }
             
             $entityManager->persist($changedUser);
+            $entityManager->flush();
 
         }
 
-        $slugify = new Slugify();
 
-        $groupName = $slugify->slugify($group->getOfficialName(),'');
 
-        $mailgun = $this->get('civix_core.mailgun')->listaddmemberAction($groupName,$this->getUser()->getEmail(),$this->getUser()->getFirstName().' '.$this->getUser()->getLastName());
-
-        if($mailgun['http_response_code'] != 200){
-            $response->setStatusCode(403)->setContent(
-                json_encode(['error' => 'cannot add to mailgun list'])
-            );
-        }else{
-
-        $entityManager->flush(); // No persist until the user is added to Mailgun List
 
         //check status of join
         $userGroup = $entityManager
@@ -362,8 +366,23 @@ class GroupController extends BaseController
         }
         if ($status == 'approve') {
             if (false === $user->getGroups()->contains($group) && true === $user->getInvites()->contains($group)) {
-                $this->get('civix_core.group_manager')
-                    ->joinToGroup($user, $group, true);
+
+                $slugify = new Slugify();
+
+                $groupName = $slugify->slugify($group->getOfficialName(),'');
+
+                $mailgun = $this->get('civix_core.mailgun')->listaddmemberAction($groupName,$this->getUser()->getEmail(),$this->getUser()->getFirstName().' '.$this->getUser()->getLastName());
+
+                if($mailgun['http_response_code'] != 200){
+                    $response->setStatusCode(403)->setContent(
+                        json_encode(['error' => 'cannot add to mailgun list'])
+                    );
+                }
+                else{
+                    $this->get('civix_core.group_manager')
+                        ->joinToGroup($user, $group, true);
+                }
+
             } else {
                 $response->setStatusCode(405);
             }
